@@ -2,7 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 
 const app = express();
-const WEBHOOK_URL = "https://webhook.site/bb1658b2-6fc7-4ca0-85c1-adccef6d3b36";
+const WEBHOOK_URL = "https://api.thingspeak.com/update.json";
 
 let lastRequestTime = 0;
 const requestQueue = [];
