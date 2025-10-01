@@ -51,43 +51,26 @@ async function processQueue() {
 const throttledWebhook = async (req, res, next) => {
   const requestData = req.body;
 
-  try {
-    const result = await new Promise((resolve, reject) => {
-      // Add this request to the queue
-      requestQueue.push({
-        data: requestData,
-        resolve,
-        reject,
-      });
+  // Add this request to the queue (fire and forget)
+  requestQueue.push({
+    data: requestData,
+    resolve: () => {}, // No-op since we don't wait for completion
+    reject: (error) => console.error("Error sending webhook:", error),
+  });
 
-      // Start processing if this is the only item in the queue
-      if (requestQueue.length === 1) {
-        processQueue();
-      }
-    });
-
-    // Attach the webhook result to the request so your route handlers can access it
-    req.webhookResult = result;
-    next();
-  } catch (error) {
-    console.error("Error sending webhook:", error);
-    req.webhookError = error;
-    next();
+  // Start processing if this is the only item in the queue
+  if (requestQueue.length === 1) {
+    processQueue();
   }
+
+  // Respond immediately without waiting for the webhook to complete
+  next();
 };
 
 // Example route using the throttled webhook middleware
-app.post("/", express.json(), throttledWebhook, (req, res) => {
-  if (req.webhookError) {
-    return res.status(500).json({
-      message: "Webhook failed",
-      error: req.webhookError.message,
-    });
-  }
-
+app.post("/", express.json(), throttledWebhook, (_req, res) => {
   res.status(200).json({
-    message: "Request processed",
-    webhookResult: req.webhookResult,
+    message: "Request queued successfully",
   });
 });
 
